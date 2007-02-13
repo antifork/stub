@@ -1,2 +1,2 @@
-/root/workspace/stub-1.0/stub.ko
-/root/workspace/stub-1.0/stub.o
+/root/workspace/stub/stub.ko
+/root/workspace/stub/stub.o

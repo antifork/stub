@@ -77,12 +77,11 @@ MODULE_PARM_DESC(master, "Physical adapter to which attach the stub");
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "debug messages on traversing sk_buffs");
 
-static int stub_xmit(struct sk_buff *skb, struct net_device *dev);
-static struct net_device_stats *stub_get_stats(struct net_device *dev);
+int stub_xmit(struct sk_buff *skb, struct net_device *dev);
 int stub_skb_recv(struct sk_buff *skb, struct net_device *dev, struct packet_type* ptype, struct net_device *orig_dev);
+struct net_device_stats *stub_get_stats(struct net_device *dev);
 
-
-static struct packet_type stub_packet_type = {
+struct packet_type stub_packet_type = {
         .type = __constant_htons(ETH_P_IP),
         .func = stub_skb_recv, 			/* VLAN receive method */
 };
@@ -112,11 +111,18 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 			in = (struct in_device *)d->ip_ptr;
 			if (skb->nh.iph->daddr == in->ifa_list->ifa_address) {
 				if (debug)
-					printk(KERN_DEBUG "[%lu] <- %s\n",jiffies,d->name);
-				/* set it to the original device */
-				skb->dev = d;
+					printk(KERN_DEBUG "[%lu] <- %s (host)\n",jiffies,d->name);
+				skb->dev = d; /* set to the correct device */
 				break;
 			}
+
+			if ((skb->nh.iph->saddr & in->ifa_list->ifa_mask) == 
+			    (in->ifa_list->ifa_address & in->ifa_list->ifa_mask) ) {
+				if (debug)
+					printk(KERN_DEBUG "[%lu] <- %s (net)\n",jiffies,d->name);
+				skb->dev = d; /* set to a dev that belongs to the same network */
+				continue;
+			} 
 		}
 
 	read_unlock(&dev_base_lock);
@@ -213,7 +219,7 @@ struct net_device_stats *stub_get_stats(struct net_device *dev)
 }
 
 
-static void stub_free_one(int index)
+void stub_free_one(int index)
 {
 	unregister_netdev(dev_stub[index]);
 	free_netdev(dev_stub[index]);
@@ -288,7 +294,7 @@ int stub_xmit(struct sk_buff *skb, struct net_device *dev)
 }
 
 
-static int __init stub_init_one(int i)
+int __init stub_init_one(int i)
 {
 	struct net_device *dev;
 	int err;
@@ -309,7 +315,7 @@ static int __init stub_init_one(int i)
 }
 
  
-static int __init stub_init_module(void)
+int __init stub_init_module(void)
 { 
 	int i, err = 0;
 	dev_stub = kmalloc(numstubs * sizeof(void *), GFP_KERNEL); 
@@ -345,7 +351,7 @@ static int __init stub_init_module(void)
 } 
 
 
-static void __exit stub_cleanup_module(void)
+void __exit stub_cleanup_module(void)
 {
 	int i;
 	for (i = 0; i < numstubs; i++) 
