@@ -141,7 +141,7 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 				break;
 			}
 
-			if ((iph->saddr & in->ifa_list->ifa_mask) == 
+			if ((iph->daddr & in->ifa_list->ifa_mask) == 
 			    (in->ifa_list->ifa_address & in->ifa_list->ifa_mask) ) {
 				if (debug)
 					printk(KERN_DEBUG "%lu: <- %s (net)\n",jiffies,d->name);
