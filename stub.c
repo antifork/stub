@@ -99,11 +99,13 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 	struct in_device  *in;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)        
-	if (skb->nh.iph == NULL)
-		return 0;
-#else
-        if (skb_network_header(skb) == NULL)
+	if (skb->nh.iph == NULL) {
                 return 0;
+        }
+#else
+        if (skb_network_header(skb) == NULL) {
+                return 0;
+        }
 #endif
 	read_lock(&dev_base_lock);
 
@@ -114,28 +116,31 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 #endif
                         struct iphdr *iph;
 
-			if ( !netif_running(d) )
+			if ( !netif_running(d) ) {
+                                continue;
+                        }
+			if ( d->ip_ptr == NULL ) {
 				continue;
-			if ( d->ip_ptr == NULL )
-				continue;
+                        }
 
-			in = (struct in_device *)d->ip_ptr;
+                        in = (struct in_device *)d->ip_ptr;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
                         iph = (struct iphdr *)skb->nh.iph;
 #else
                         iph = (struct iphdr *)skb_network_header(skb);
 #endif
 			if (iph->daddr == in->ifa_list->ifa_address) {
-				if (debug)
-					printk(KERN_DEBUG "[%lu] <- %s (host)\n",jiffies,d->name);
-				skb->dev = d; /* sent to skb->dev */
+                                if (debug)
+				        printk(KERN_DEBUG "%lu <- %s (host)\n",jiffies,d->name);
+
+                                skb->dev = d; /* sent to skb->dev */
 				break;
 			}
 
 			if ((iph->daddr & in->ifa_list->ifa_mask) == 
 			    (in->ifa_list->ifa_address & in->ifa_list->ifa_mask) ) {
 				if (debug)
-					printk(KERN_DEBUG "[%lu] <- %s (net)\n",jiffies,d->name);
+					printk(KERN_DEBUG "%lu <- %s (net)\n",jiffies,d->name);
 				skb->dev = d; /* sent to skb->dev as destination network */
 				continue;
 			} 
@@ -144,6 +149,32 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 	read_unlock(&dev_base_lock);
 	return 0;
 }
+
+int stub_xmit(struct sk_buff *skb, struct net_device *dev)
+{
+	struct net_device_stats *stats = netdev_priv(dev);
+
+        stats->tx_packets++;
+        stats->tx_bytes+=skb->len;
+
+	if (debug)
+		printk(KERN_DEBUG "[%lu]   %s ->\n",jiffies, skb->dev->name);
+
+        skb->protocol=eth_type_trans(skb,dev);
+        skb->dev=dev_master;
+	skb->priority=1;
+
+        /* align data part correctly */
+        if (dev->hard_header) {
+                skb->data -= dev->hard_header_len;
+                skb->tail -= dev->hard_header_len;
+		skb->len  += dev->hard_header_len;
+        }
+
+	dev_queue_xmit(skb); 
+	return 0;
+}
+
 
 /* neighbors: this comes form shaper.c (Alan Cox) and is needed for ARP to work
  */
@@ -284,32 +315,6 @@ void __init stub_setup(struct net_device *dev)
 }
 
 
-int stub_xmit(struct sk_buff *skb, struct net_device *dev)
-{
-	struct net_device_stats *stats = netdev_priv(dev);
-
-        stats->tx_packets++;
-        stats->tx_bytes+=skb->len;
-
-	if (debug)
-		printk(KERN_DEBUG "[%lu]   %s ->\n",jiffies, skb->dev->name);
-
-        skb->protocol=eth_type_trans(skb,dev);
-        skb->dev=dev_master;
-	skb->priority=1;
-
-        /* align data part correctly */
-        if (dev->hard_header) {
-                skb->data -= dev->hard_header_len;
-                skb->tail -= dev->hard_header_len;
-		skb->len  += dev->hard_header_len;
-        }
-
-	dev_queue_xmit(skb); 
-	return 0;
-}
-
-
 int __init stub_init_one(int i)
 {
 	struct net_device *dev;
@@ -359,7 +364,7 @@ int __init stub_init_module(void)
 			stub_free_one(i);
 	}
 
-	if ( !err ) { 
+	if ( !err ) {
 		dev_add_pack(&stub_packet_type);
 	}
 	
