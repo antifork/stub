@@ -61,7 +61,7 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 extern struct neigh_ops arp_broken_ops;
 
-char *master;			/* device name */
+char *name_master;			/* device name */
 int numstubs = 1;
 int debug = 0;
 
@@ -72,8 +72,8 @@ struct net_device **dev_stub;
 module_param(numstubs, int, 0);
 MODULE_PARM_DESC(numstubs, "Number of stub pseudo devices");
 
-module_param(master, charp, 0);
-MODULE_PARM_DESC(master, "Physical adapter to which attach the stub");
+module_param(name_master, charp, 0);
+MODULE_PARM_DESC(name_master, "Physical adapter to which attach the stub");
 
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "debug messages on traversing sk_buffs");
@@ -164,9 +164,9 @@ int stub_xmit(struct sk_buff *skb, struct net_device *dev)
 	if (debug)
 		printk(KERN_DEBUG "%lu:   %s ->\n",jiffies, skb->dev->name);
 
-        skb->protocol=eth_type_trans(skb,dev);
-        skb->dev=dev_master;
-	skb->priority=1;
+        skb->protocol = eth_type_trans(skb,dev);
+        skb->dev = dev_master;
+	skb->priority = 1;
 
         /* align data part correctly */
         if (dev->hard_header) {
@@ -347,13 +347,13 @@ int __init stub_init_module(void)
 	if (!dev_stub)
 		return -ENOMEM; 
 
-	if (master == NULL) {
+	if (name_master == NULL) {
 		printk(KERN_ALERT "stub: master param required.\n");
 		return -EFAULT;
 	}
 
-	if( (dev_master = __dev_get_by_name(master)) == NULL ){
-		printk(KERN_ALERT "stub: %s bad device name.\n",master);
+	if( (dev_master = __dev_get_by_name(name_master)) == NULL ){
+		printk(KERN_ALERT "stub: %s bad device name.\n",name_master);
 		return -EFAULT;
 	}
 
@@ -361,7 +361,7 @@ int __init stub_init_module(void)
 		err = stub_init_one(i); 
 
 	if (!err) 
-		printk("stub: %d stubs registered on device %s.\n",numstubs, master);
+		printk("stub: %d stubs registered on device %s.\n",numstubs, name_master);
 	else { 
 		i--;
 		while (--i >= 0)
