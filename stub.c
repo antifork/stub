@@ -44,6 +44,7 @@
 
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/version.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/init.h>
@@ -97,30 +98,45 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 	struct net_device *d;
 	struct in_device  *in;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)        
 	if (skb->nh.iph == NULL)
 		return 0;
-
+#else
+        if (skb_network_header(skb) == NULL)
+                return 0;
+#endif
 	read_lock(&dev_base_lock);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)        
 		for ( d = dev_base; d != NULL; d=d->next) {
+#else
+                for ( d = first_net_device(); d != NULL;  d = next_net_device(d) ) {        
+#endif
+                        struct iphdr *iph;
+
 			if ( !netif_running(d) )
 				continue;
 			if ( d->ip_ptr == NULL )
 				continue;
 
 			in = (struct in_device *)d->ip_ptr;
-			if (skb->nh.iph->daddr == in->ifa_list->ifa_address) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
+                        iph = (struct iphdr *)skb->nh.iph;
+#else
+                        iph = (struct iphdr *)skb_network_header(skb);
+#endif
+			if (iph->daddr == in->ifa_list->ifa_address) {
 				if (debug)
 					printk(KERN_DEBUG "[%lu] <- %s (host)\n",jiffies,d->name);
-				skb->dev = d; /* set to the correct device */
+				skb->dev = d; /* sent to skb->dev */
 				break;
 			}
 
-			if ((skb->nh.iph->saddr & in->ifa_list->ifa_mask) == 
+			if ((iph->daddr & in->ifa_list->ifa_mask) == 
 			    (in->ifa_list->ifa_address & in->ifa_list->ifa_mask) ) {
 				if (debug)
 					printk(KERN_DEBUG "[%lu] <- %s (net)\n",jiffies,d->name);
-				skb->dev = d; /* set to a dev that belongs to the same network */
+				skb->dev = d; /* sent to skb->dev as destination network */
 				continue;
 			} 
 		}
