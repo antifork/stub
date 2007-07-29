@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007 - Nicola Bonelli <nbonelli@mbigroup.it> 
+ * Copyright (c) 2007 - Nicola Bonelli <bonelli@antifork.org> 
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
