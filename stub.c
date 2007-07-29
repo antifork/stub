@@ -61,19 +61,19 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 extern struct neigh_ops arp_broken_ops;
 
-char *name_master;			/* device name */
-int numstubs = 1;
+char *master;			/* device name */
+int stubs = 1;
 int debug = 0;
 
 struct net_device *dev_master;
 struct net_device **dev_stub;
 
 /* Number of stub devices to be set up by this module. */
-module_param(numstubs, int, 0);
-MODULE_PARM_DESC(numstubs, "Number of stub pseudo devices");
+module_param(stubs, int, 0);
+MODULE_PARM_DESC(stubs, "Number of stub pseudo devices");
 
-module_param(name_master, charp, 0);
-MODULE_PARM_DESC(name_master, "Physical adapter to which attach the stub");
+module_param(master, charp, 0);
+MODULE_PARM_DESC(master, "Physical adapter to which attach the stub");
 
 module_param(debug, int, 0);
 MODULE_PARM_DESC(debug, "debug messages on traversing sk_buffs");
@@ -343,25 +343,25 @@ int __init stub_init_one(int i)
 int __init stub_init_module(void)
 { 
 	int i, err = 0;
-	dev_stub = kmalloc(numstubs * sizeof(void *), GFP_KERNEL); 
+	dev_stub = kmalloc(stubs * sizeof(void *), GFP_KERNEL); 
 	if (!dev_stub)
 		return -ENOMEM; 
 
-	if (name_master == NULL) {
+	if (master == NULL) {
 		printk(KERN_ALERT "stub: master param required.\n");
 		return -EFAULT;
 	}
 
-	if( (dev_master = __dev_get_by_name(name_master)) == NULL ){
-		printk(KERN_ALERT "stub: %s bad device name.\n",name_master);
+	if( (dev_master = __dev_get_by_name(master)) == NULL ){
+		printk(KERN_ALERT "stub: %s bad device name.\n",master);
 		return -EFAULT;
 	}
 
-	for (i = 0; i < numstubs && !err; i++)
+	for (i = 0; i < stubs && !err; i++)
 		err = stub_init_one(i); 
 
 	if (!err) 
-		printk("stub: %d stubs registered on device %s.\n",numstubs, name_master);
+		printk("stub: %d stubs registered on device %s.\n",stubs, master);
 	else { 
 		i--;
 		while (--i >= 0)
@@ -379,7 +379,7 @@ int __init stub_init_module(void)
 void __exit stub_cleanup_module(void)
 {
 	int i;
-	for (i = 0; i < numstubs; i++) 
+	for (i = 0; i < stubs; i++) 
 		stub_free_one(i); 
 
 	dev_remove_pack(&stub_packet_type);
