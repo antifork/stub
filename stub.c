@@ -124,6 +124,10 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
                         }
 
                         in = (struct in_device *)d->ip_ptr;
+                        if (in->ifa_list == NULL) {
+                                continue;
+                        }
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,22)
                         iph = (struct iphdr *)skb->nh.iph;
 #else
