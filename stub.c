@@ -131,16 +131,16 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 #endif
 			if (iph->daddr == in->ifa_list->ifa_address) {
                                 if (debug)
-				        printk(KERN_DEBUG "%lu <- %s (host)\n",jiffies,d->name);
+				        printk(KERN_DEBUG "%lu: <- %s (host)\n",jiffies,d->name);
 
                                 skb->dev = d; /* sent to skb->dev */
 				break;
 			}
 
-			if ((iph->daddr & in->ifa_list->ifa_mask) == 
+			if ((iph->saddr & in->ifa_list->ifa_mask) == 
 			    (in->ifa_list->ifa_address & in->ifa_list->ifa_mask) ) {
 				if (debug)
-					printk(KERN_DEBUG "%lu <- %s (net)\n",jiffies,d->name);
+					printk(KERN_DEBUG "%lu: <- %s (net)\n",jiffies,d->name);
 				skb->dev = d; /* sent to skb->dev as destination network */
 				continue;
 			} 
@@ -158,7 +158,7 @@ int stub_xmit(struct sk_buff *skb, struct net_device *dev)
         stats->tx_bytes+=skb->len;
 
 	if (debug)
-		printk(KERN_DEBUG "[%lu]   %s ->\n",jiffies, skb->dev->name);
+		printk(KERN_DEBUG "%lu:   %s ->\n",jiffies, skb->dev->name);
 
         skb->protocol=eth_type_trans(skb,dev);
         skb->dev=dev_master;

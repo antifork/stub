@@ -1,4 +1,4 @@
-insmod ./stub.ko master=eth1 numstubs=2 debug=1
+insmod ./stub.ko master=eth0 numstubs=2 debug=1
 
 # flush routes tables and rules
 ip route flush tab 10  >& /dev/null
