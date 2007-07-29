@@ -12,7 +12,7 @@ ip addr add 172.16.0.201/24 dev stub1
 ip link set dev stub0 up
 ip link set dev stub1 up
 
-# SO_BINDTODEVICE avoids policty routing. To handle 
+# SO_BINDTODEVICE avoids policy routing. To handle 
 # it correctly for each device add a # default gw 
 # in the main table... 
 ip route add default via 172.16.0.1 dev stub0 metric 1 
