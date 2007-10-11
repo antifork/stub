@@ -151,6 +151,8 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 		}
 
 	read_unlock(&dev_base_lock);
+
+        kfree_skb(skb);
 	return 0;
 }
 
