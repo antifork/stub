@@ -18,5 +18,5 @@ default:
 endif
 
 clean:
-	@rm -rf *.{o,ko} Module.symvers .*.cmd *.mod.c 
+	@rm -rf *.o *.ko Module.symvers .*.cmd *.mod.c 
 
