@@ -87,9 +87,8 @@ struct packet_type stub_packet_type = {
         .func = stub_skb_recv, 			/* VLAN receive method */
 };
 
-/* demux receiver: incoming sk_buff from master device are 
- * diverted to the proper stub device, according to their
- * destination ip address. :-) 
+/* demux handler: incoming sk_buff from master device are 
+ * diverted to the proper stub, according to their destination ip address. 
  */
 
 int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
@@ -135,7 +134,7 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 #endif
 			if (iph->daddr == in->ifa_list->ifa_address) {
                                 if (debug)
-				        printk(KERN_DEBUG "%lu: <- %s (host)\n",jiffies,d->name);
+				        printk(KERN_DEBUG "stub_skb_recv: %lu: <- %s (host)\n",jiffies,d->name);
 
                                 skb->dev = d; /* sent to skb->dev */
 				break;
@@ -144,16 +143,16 @@ int stub_skb_recv(struct sk_buff *skb, struct net_device *dev,
 			if ((iph->daddr & in->ifa_list->ifa_mask) == 
 			    (in->ifa_list->ifa_address & in->ifa_list->ifa_mask) ) {
 				if (debug)
-					printk(KERN_DEBUG "%lu: <- %s (net)\n",jiffies,d->name);
+					printk(KERN_DEBUG "stub_skb_recv: %lu: <- %s (net)\n",jiffies,d->name);
 				skb->dev = d; /* sent to skb->dev as destination network */
 				continue;
 			} 
 		}
 
 	read_unlock(&dev_base_lock);
-
         kfree_skb(skb);
-	return 0;
+
+        return 0;
 }
 
 int stub_xmit(struct sk_buff *skb, struct net_device *dev)
@@ -362,19 +361,24 @@ int __init stub_init_module(void)
 	for (i = 0; i < stubs && !err; i++)
 		err = stub_init_one(i); 
 
-	if (!err) 
-		printk("stub: %d stubs registered on device %s.\n",stubs, master);
-	else { 
-		i--;
-		while (--i >= 0)
-			stub_free_one(i);
-	}
+	if (err)
+              goto fail;  
 
-	if ( !err ) {
-		dev_add_pack(&stub_packet_type);
-	}
-	
-	return err;
+        printk("stub: %d stubs registered on device %s.\n",stubs, master);
+
+#ifdef REGISTER_STUB_HANDLER
+        stub_packet_type.dev = dev_master;
+        dev_add_pack(&stub_packet_type);
+#endif
+        return 0;
+  
+   fail:
+
+        i--;
+        while(--i >= 0)
+                stub_free_one(i);
+
+        return err;
 } 
 
 
@@ -385,7 +389,6 @@ void __exit stub_cleanup_module(void)
 		stub_free_one(i); 
 
 	dev_remove_pack(&stub_packet_type);
-
 	kfree(dev_stub);	
 }
 
