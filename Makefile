@@ -4,7 +4,7 @@
 ifneq ($(KERNELRELEASE),)
 obj-m := stub.o
 
-EXTRA_CFLAGS := -I$(src)/include
+EXTRA_CFLAGS := -I$(src)/include # -DREGISTER_STUB_HANDLER
 
 
 # Otherwise we were called directly from the command
